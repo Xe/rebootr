@@ -38,12 +38,15 @@ class _MyHomePageState extends State<MyHomePage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     this.apiToken = prefs.getString("api_token");
 
+    List<App> result = [];
+
     this.client = new Client(
       "https://api.heroku.com",
       this.apiToken,
     );
 
     this.client.listApps().then((apps) {
+      apps.forEach((a) => result.add(a));
       setState(() {
         this.apps = apps;
         this.lastMessage = "refreshed app view";
@@ -67,20 +70,47 @@ class _MyHomePageState extends State<MyHomePage> {
       result.add(ctr);
     }
 
+    if (this.apiToken == null) {
+      result.add(Text("Please configure the Heroku API token in settings"));
+      return result;
+    }
+
     if (this.apps == null && this.apiToken != null) {
       this._getApps();
       result.add(Text("Refreshing..."));
       return result;
     }
 
-    if (this.apiToken == null) {
-      this._getApps();
-      result.add(Text("Loading..."));
-      return result;
-    }
-
     this.apps.forEach((app) {
       String appName = app.name;
+      List<Widget> children = [
+        new Icon(Icons.star, color: Colors.purple[500]),
+        new Expanded(
+            child: new Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text("$appName"),
+                  Text(app.owner.email, style: TextStyle(fontSize: 10.0)),
+                ])),
+      ];
+
+      children.add(new RaisedButton(
+        onPressed: () {
+          this.client.killApp(appName);
+          setState(() {
+            this.lastMessage = "$appName was restarted";
+            print(this.lastMessage);
+          });
+
+          Scaffold.of(ctx).showSnackBar(
+                new SnackBar(
+                  content: Text(this.lastMessage),
+                ),
+              );
+        },
+        child: Text("Restart"),
+      ));
 
       Container ctr = new Container(
         padding: const EdgeInsets.only(
@@ -90,28 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
           bottom: 8.0,
         ),
         child: Row(
-          children: <Widget>[
-            new Icon(Icons.star, color: Colors.purple[500]),
-            new Expanded(
-              child: Text("$appName"),
-            ),
-            new RaisedButton(
-              onPressed: () {
-                this.client.killApp(appName);
-                setState(() {
-                  this.lastMessage = "$appName was restarted";
-                  print(this.lastMessage);
-                });
-
-                Scaffold.of(ctx).showSnackBar(
-                  new SnackBar(
-                    content: Text(this.lastMessage),
-                  ),
-                );
-              },
-              child: Text("Restart"),
-            ),
-          ],
+          children: children,
         ),
       );
 
@@ -132,8 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
       onSubmitted: (String token) async {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setString("api_token", token);
-        print("api token changed to " + token);
-        prefs.commit().then((arg) => print(arg));
+        prefs.commit().then((_) {});
       },
     );
 
@@ -164,10 +172,7 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: <Widget>[
           new IconButton(
             onPressed: () {
-              Navigator.push(
-                ctx,
-                new MaterialPageRoute(builder: settings)
-              );
+              Navigator.push(ctx, new MaterialPageRoute(builder: settings));
             },
             tooltip: "Settings",
             icon: new Icon(Icons.settings),
