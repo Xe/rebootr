@@ -34,8 +34,11 @@ class Client extends Object {
   }
 
   Future<List<App>> listApps() async {
+    print("getting apps");
     final response = await http.get(this.urlBase + "/apps", headers: this.headers());
+    print(response.statusCode);
     final responseJson = json.decode(response.body) as List<dynamic>;
+    print("decoded json");
 
     List<App> result = [];
     responseJson.forEach((item) => result.add(new App.fromJson(item)));

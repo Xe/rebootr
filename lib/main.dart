@@ -74,7 +74,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     if (this.apiToken == null) {
-      result.add(Text("Please configure this app in settings."));
+      this._getApps();
+      result.add(Text("Loading..."));
       return result;
     }
 
@@ -132,6 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setString("api_token", token);
         print("api token changed to " + token);
+        prefs.commit().then((arg) => print(arg));
       },
     );
 
