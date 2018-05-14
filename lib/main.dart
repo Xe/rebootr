@@ -142,6 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setString("api_token", token);
         prefs.commit().then((_) {});
+        this._getApps();
       },
     );
 
